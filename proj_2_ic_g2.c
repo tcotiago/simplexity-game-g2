@@ -9,41 +9,31 @@
 #define MAX_ROW 7
 /** Vertical board size. */
 #define MAX_COL 7
-/** Game pieces O and X */
+/** Game pieces O and X for terminal view. */
 #define PIECES "OX"
-
+/** Game pieces dimension (G2). */
 #define OBJ_DIM 30
+/** Game pieces spacing (G2). */
 #define SPACING 10
+/** Game pieces in a sequence needed to win. */
+#define MAX_WIN_PIECE 4
 
-enum g2_colors {
-    WHITE = 0,
-    BLACK = 1,
-    GREY = 26, // yellow
-    BLUE = 3,
-    RED = 19,
-};
 
-//#define
-//#define
-//#define
-//#define
-//#define
-
-char board[MAX_ROW][MAX_COL]; // Array 2D Board
-
+char board[MAX_ROW][MAX_COL]; // Char Array 2D Board
+int row_sel, col_sel; // Column and row selected
 
 void clearBoard(){
 	for(int r = 0; r < MAX_ROW ; r++) // Go through all rows
 		for(int c = 0; c < MAX_COL ; c++) // Go through all cols
 			board[r][c] = 0; // Reset all rows and cols
-	//playerTurn = 0;
+	//playerTurn = 1;
 }
 
 char* getPrintableSymbol(char c){
-	if(c == 4) return "\x1B[97m0\x1B[0m"; // White O
-	if(c == 5) return "\x1B[31m0\x1B[0m"; // Red O
-	if(c == 6) return "\x1B[97mX\x1B[0m"; // White X
-	if(c == 7) return "\x1B[31mX\x1B[0m"; // Red X
+	if(c == 4) return "\x1B[97m0\x1B[0m"; // White Cylinder
+	if(c == 5) return "\x1B[31m0\x1B[0m"; // Red Cylinder
+	if(c == 6) return "\x1B[97mX\x1B[0m"; // White Square
+	if(c == 7) return "\x1B[31mX\x1B[0m"; // Red Square
 	
 	//if(c == 4) return "\x1B[97m"+PIECES[0]+"\x1B[0m"; // White O
 	//if(c == 5) return "\x1B[31m"+PIECES[0]+"\x1B[0m"; // Red O
@@ -65,14 +55,23 @@ int getAvailableRow(int col){
 int getPieceId (int symbol, int turn){
 	// Codifica o simbolo em valor p/ o tabuleiro
 	return 4+symbol*2 + turn; // De 4 a 7
+	// 4 + 0-1 * 2 + color/turn
+	
+	// 4 White O 
+	// 5 Red O
+	// 6 White X
+	// 7 Red X
 }
 
-char getPiece (int row, int col){
-	return board[row][col];
+char getPiece (int row, int col){ // Asks for cell on Array
+	return board[row][col]; // Returns a character from the 2D Array
 }
 
-int getColor (int row, int col){
-	return getPiece(row, col)%2;
+int getTurn (int row, int col){ // Get color
+	char piece = getPiece(row, col);
+	if(piece==0)
+		return 0;
+	return piece%2 + 1;
 }
 
 int getSymbol (int row, int col){
@@ -83,9 +82,6 @@ int getSymbol (int row, int col){
 }
 	
 void viewBoard(){
-	
-	
-	
 	for(int r = MAX_ROW -1; r >= 0 ; r--){ // From top to bottom
 		for(int c = 0; c < MAX_COL ; c++){  // Cols from left to right
 			printf(" %s ", getPrintableSymbol(board[r][c])); // Print symbol as string
@@ -100,65 +96,105 @@ void viewBoard(){
 	for(int c = 0; c < MAX_COL ; c++) // Col Nrs
 		printf(" %d ", c+1);
 	printf("\n\n\x1B[0m"); // Reset print color to white
-	
-	
 }
 
-bool insertPiece(int col, int symbol, int turn){
+int insertPiece(int col, int symbol, int turn){
 	if( col < 0 || col >= MAX_COL ) // Error handler input column
-		return false;
+		return -1;
 	int row = getAvailableRow(col); // Stack on rows
-	if(row >= 0){ // Error handler full
+	if(row >= 0){ // If row is available
 		board[row][col] = getPieceId(symbol, turn);
-		return true;
+		return row;
 	}
-	else return false;
+	else return -1; // Col is full
 }
 
 ///////////////// NEW FILE (HMI's)
 int playerTurn = 0;
 int turnCounter = 1;
-
-int nextTurn(){ // Advances turn and changes player (P0 and P1)
-	playerTurn = (playerTurn + 1)%2;
+int p0_o;
+int p1_o;
+int p0_x;
+int p1_x;
+	
+int nextTurn(){ // Advances turn and changes player (P1 and P2)
+	playerTurn = (playerTurn + 1)%2; // 0 or 1
 	return turnCounter += 1;
 }
 
+void pieceInventory(int piece_sel){
+	if(piece_sel == 1 && playerTurn == 0)
+		p0_o -= 1;
+	else if(piece_sel == 1 && playerTurn == 1)
+		p1_o -= 1;
+	else if(piece_sel == 2 && playerTurn == 0)
+		p0_x -= 1;
+	else if(piece_sel == 2 && playerTurn == 1)
+		p1_x -= 1;
+}
+
 int askTurnChoices(){
-	int col_sel;
-	int piece_sel;
-	bool nok;
+	int piece_sel; // Piece selected
+	bool nok; // Not ok, error handler
 	do { 
-		if(playerTurn == 0){
-			printf("Player 1's turn \n");
+		if(turnCounter == 1){ // Give pieces to both players
+		 p0_o = 10;
+		 p1_o = 10;
+		 p0_x = 11;
+		 p1_x = 11;
 		}
-		else printf("Player 2's turn \n");
+		if(turnCounter == 43){ // Max turns before tie
+			//gameOverTie();
+		}
+		if(playerTurn == 0){ // 0 or 1
+			printf("Player 1's turn \n");
+			printf("White cylinders left: %d \n", p0_o);
+			printf("White cubes left: %d \n", p0_x);
+			
+		}
+		else {
+			printf("Player 2's turn \n");
+			printf("Red cylinders left: %d \n", p1_o);
+			printf("Red cubes left: %d \n", p1_x);
+		}
 		do {
 			printf("Turn number: %d \n", turnCounter);
 			printf("Choose a valid column: \t");
 			scanf("%d", &col_sel);
 			nok = (col_sel < 1) || (col_sel > MAX_COL);
+			col_sel--;
 			if(nok)
 				printf("You selected an invalid column.\n\n");
 		} while (nok);
 		do {
 			printf("Choose a valid piece type (1 for %c or 2 for %c): ", PIECES[0], PIECES[1]);
 			scanf("%d", &piece_sel);
-			nok = (piece_sel < 1) || (piece_sel > 2);
+			nok = (piece_sel < 1) || (piece_sel > 2); // Catch bad input
 			if(nok)
 				printf("You selected an invalid piece type.\n\n");
+				
 		} while (nok);
-		nok = !insertPiece(col_sel -1, piece_sel -1, playerTurn);
+		row_sel = insertPiece(col_sel, piece_sel -1, playerTurn);
+		nok = row_sel < 0; // Full col error catcher
 		if(nok)
 			printf("The selected column is full.\n\n");
 	} while (nok);
-	
+	pieceInventory(piece_sel);
 	nextTurn(); // Advance 1 turn
-	viewBoard(); // Render Board
-	return 0;
+	//viewBoard(); // Render Board
+	return col_sel;
 }
+	///////////////// HMI End
+	
+	///////////////// G2 Start
 
-	///////////////// G2
+enum g2_colors {
+    WHITE = 0,
+    BLACK = 1,
+    RED = 19,
+    YELLOW = 26,
+};
+	
 void drawCircle(int dev, int row, int col){
 	int x = SPACING + (OBJ_DIM + SPACING) * col + OBJ_DIM/2;
 	int y = SPACING + (OBJ_DIM + SPACING) * (row + 1) + OBJ_DIM/2;
@@ -173,9 +209,9 @@ void drawSquare(int dev, int row, int col){
 	//printf("X %d, Y %d, R %d\n", x, y, OBJ_DIM/2);
 }
 
-int getColor_g2(int row, int col){
-	int c = getColor(row, col);
-	if(c == 0)
+int getTurn_g2(int row, int col){
+	int c = getTurn(row, col);
+	if(c == 1)
 		return  WHITE;
 	return RED;
 	
@@ -183,11 +219,11 @@ int getColor_g2(int row, int col){
 
 void viewBoard_g2(int dev, int win_x, int win_y){
 	int x,y;
-	char* num = malloc(sizeof(char)*2);
+	char* num = malloc(sizeof(char)*2); // *2 para ser 1 + /0
 	num[1] = '\0';
 	g2_pen(dev, BLACK);
-	g2_filled_rectangle (dev, 0, 0, win_x, win_y);
-	g2_pen(dev, GREY);
+	g2_filled_rectangle (dev, 0, 0, win_x, win_y); // Background
+	g2_pen(dev, YELLOW);
 	for(int c = 0; c < MAX_COL ; c++){
 		x = SPACING + OBJ_DIM/2 + (OBJ_DIM + SPACING)*c;
 		y = win_y - SPACING;
@@ -199,56 +235,133 @@ void viewBoard_g2(int dev, int win_x, int win_y){
 	
 	for(int r = 0; r < MAX_ROW ; r++){ // From bot to top
 		for(int c = 0; c < MAX_COL ; c++){  // Cols from left to right
-			g2_pen(dev, getColor_g2(r, c));
+			g2_pen(dev, getTurn_g2(r, c));
 			if(getSymbol(r, c) == 1)
 				drawCircle(dev, r, c);
 			if(getSymbol(r, c) == 2)
 				drawSquare(dev, r, c);
-			//printf("--%d--",getSymbol(r,c));
 		}
 	}
-	//g2_line (int dev, double x1, double y1, double x2, double y2)
-	//g2_filled_circle(dev, r, c, 10); 
-	//g2_filled_rectangle (int dev, double x1, double y1, double x2, double y2)
-	//g2_string (int dev, double x, double y, const char *text)
-	
 }
-	/////////////////
+///////////////// G2 (end)
+
+///////////////// WinChecker - start
+int min(int value, int value2){
+	if(value < value2)
+		return value;
+	return value2;
+}
+
+int max(int value, int value2){
+	if(value > value2)
+		return value;
+	return value2;
+}
+
+int getFirstX(int col){
+	return max(0, col - (MAX_WIN_PIECE - 1));
+}
+
+int getFirstY(int row){
+	return max(0, row - (MAX_WIN_PIECE - 1));
+}
+
+int getLastX(int col){
+	return min(MAX_COL - MAX_WIN_PIECE, col);
+}
+
+int getLastY(int row){
+	return min(MAX_ROW - MAX_WIN_PIECE, row);
+}
+
+int horizontal_validation(int row, int col){
+	printf("Horizontal %d\n", row);
+	int x_init = getFirstX(col);
+	int x_last = getLastX(col);
+
+	for( int x = x_init; x <= x_last; x++ ){
+		int equal_color = 1; // já temos a primeira cor igual
+		int equal_symbol = 1;
+		//printf("%d %d %d \n", x_init, x, x_last);
+		int turn = getTurn(row, x);
+		int symbol = getSymbol(row, x);
+		if(turn > 0)
+			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
+				
+				if( turn == getTurn(row, x + i) )
+					equal_color++;
+				if( symbol == getSymbol(row, x + i) )
+					equal_symbol++;
+				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
+			}
+		if(equal_symbol == MAX_WIN_PIECE)
+			return 2; // symbol win
+		if(equal_color == MAX_WIN_PIECE)
+			return 1; // color win
+	}
+	return 0; // nobody won, continue
+}
+///////////////// (wincheck end)
 
 
 int main() {
-	//printf("%d\n", sizeof(PIECES));
+
+	// Clears the board before playing
 	clearBoard();
-	int x = SPACING+(OBJ_DIM+SPACING)*MAX_COL;
+	
+	// Variable dimensions
+	// FIRST_SPACE + (OBJECT + SPACE_TO_NEXT) * COLUMNS
+	int x = SPACING+(OBJ_DIM+SPACING)*MAX_COL; 
+	// FIRST_SPACE + (OBJECT + SPACE_TO_NEXT) * ROWS PLUS EXTRA 1
 	int y = SPACING+(OBJ_DIM+SPACING)*(MAX_ROW+1);
-	int dev=g2_open_X11(x, y);
+	int dev=g2_open_X11(x, y); // Opens X11 window according to defines
+	
 	// Debugging manual insert
+	//insertPiece(0, 0, 0);
+	//insertPiece(1, 1, 1);
+	//insertPiece(2, 0, 0);
+	//insertPiece(3, 1, 1);
+
+	//insertPiece(4, 1, 0);
+	//insertPiece(4, 0, 0);
+	//insertPiece(4, 0, 0);
+	//insertPiece(4, 1, 1);
+	
+	//insertPiece(4, 1, 1);
+	//insertPiece(4, 1, 1);
+	//insertPiece(4, 1, 1);
+	//insertPiece(2, 1, 1);
+	//insertPiece(3, 0, 0);
+	//insertPiece(3, 0, 0);
+	
+	//insertPiece(5, 0, 0);
+	//insertPiece(2, 0, 0);
+	//insertPiece(2, 0, 0);
+	
 	insertPiece(0, 0, 0);
-	insertPiece(0, 1, 1);
-	insertPiece(0, 0, 1);
-	insertPiece(0, 1, 0);
-	insertPiece(0, 1, 0);	
+	insertPiece(1, 0, 1);
+	insertPiece(1, 1, 0);
+	insertPiece(2, 1, 0);
+	insertPiece(2, 1, 0);
+	insertPiece(2, 1, 0);
+	insertPiece(3, 1, 0);
+	insertPiece(3, 1, 0);
+	insertPiece(3, 0, 1);
+	
+	// Debugging manual check
+	//printf("%d Horizontal win \n", horizontal_validation(0, 1));	
+
+	do{
+		
+		viewBoard(); // Remover ao organizar interaccao
+		viewBoard_g2(dev, x, y);
+		askTurnChoices();
+	} while (!checkWhoWins(row_sel, col_sel));
 	viewBoard(); // Remover ao organizar interaccao
 	viewBoard_g2(dev, x, y);
-	//////////////////////////
-	
-	askTurnChoices();
-	viewBoard_g2(dev, x, y);
-	askTurnChoices();
-	viewBoard_g2(dev, x, y);
-	askTurnChoices();
-	viewBoard_g2(dev, x, y);
-	askTurnChoices();
-	viewBoard_g2(dev, x, y);
-	
+
 	getchar();
 	getchar();
-	//printf("Simbolo %c, cor %d, \n", PIECES[getSymbol(0, 0)-1], getColor(0, 0));
-	//printf("Simbolo %c, cor %d, \n", PIECES[getSymbol(1, 0)-1], getColor(1, 0));
-	//printf("Simbolo %c, cor %d, \n", PIECES[getSymbol(2, 0)-1], getColor(2, 0));
-	//board[0][0] = 4;
-	//board[6][6] = 7;
-	
 	
 	return 0;	
 }
