@@ -301,6 +301,35 @@ int horizontal_validation(int row, int col){
 	}
 	return 0; // nobody won, continue
 }
+
+int vertical_validation(int row, int col){
+	printf("Vertical %d\n", col);
+	int y_init = getFirstY(row);
+	int y_last = getLastY(row);
+	for( int y = y_init; y <= y_last; y++ ){
+		int equal_color = 1; // já temos a primeira cor
+		int equal_symbol = 1; // já temos o primeiro simbolo
+		//printf("%d %d %d \n", x_init, x, x_last); // DEBUG
+		int turn = getTurn(y, col);
+		int symbol = getSymbol(y, col);
+		if(turn > 0)
+			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
+				
+				if( turn == getTurn(y + i, col) )
+					equal_color++;
+				if( symbol == getSymbol(y + i, col) )
+					equal_symbol++;
+				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
+			}
+		if(equal_symbol == MAX_WIN_PIECE)
+			return 2; // symbol win
+		if(equal_color == MAX_WIN_PIECE)
+			return 1; // color win
+	}
+	return 0; // nobody won, continue
+}
+
+
 ///////////////// (wincheck end)
 
 
@@ -327,12 +356,12 @@ int main() {
 	//insertPiece(4, 0, 0);
 	//insertPiece(4, 1, 1);
 	
-	//insertPiece(4, 1, 1);
-	//insertPiece(4, 1, 1);
-	//insertPiece(4, 1, 1);
-	//insertPiece(2, 1, 1);
-	//insertPiece(3, 0, 0);
-	//insertPiece(3, 0, 0);
+	insertPiece(4, 1, 1);
+	insertPiece(4, 1, 1);
+	insertPiece(4, 1, 1);
+	insertPiece(2, 1, 1);
+	insertPiece(3, 0, 0);
+	insertPiece(3, 0, 0);
 	
 	//insertPiece(5, 0, 0);
 	//insertPiece(2, 0, 0);
@@ -348,15 +377,15 @@ int main() {
 	insertPiece(3, 1, 0);
 	insertPiece(3, 0, 1);
 	
-	// Debugging manual check
-	//printf("%d Horizontal win \n", horizontal_validation(0, 1));	
+	printf("%d Horizontal win \n", horizontal_validation(0, 1));	
+	printf("%d Vertical win  \n", vertical_validation(0, 3));		
 
-	do{
+	//do{
 		
-		viewBoard(); // Remover ao organizar interaccao
-		viewBoard_g2(dev, x, y);
-		askTurnChoices();
-	} while (!checkWhoWins(row_sel, col_sel));
+		//viewBoard();
+		//viewBoard_g2(dev, x, y);
+		//askTurnChoices();
+	//} while (!checkWhoWins(row_sel, col_sel));
 	viewBoard(); // Remover ao organizar interaccao
 	viewBoard_g2(dev, x, y);
 
