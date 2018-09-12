@@ -112,28 +112,28 @@ int insertPiece(int col, int symbol, int turn){
 ///////////////// NEW FILE (HMI's)
 int playerTurn = 0;
 int turnCounter = 1;
-int p0_o;
-int p1_o;
-int p0_x;
-int p1_x;
-	
+
 int nextTurn(){ // Advances turn and changes player (P1 and P2)
 	playerTurn = (playerTurn + 1)%2; // 0 or 1
-	return turnCounter += 1;
+	return turnCounter += 1; // Advances Turn Counter on player change
 }
 
-void pieceInventory(int piece_sel){
-	if(piece_sel == 1 && playerTurn == 0)
-		p0_o -= 1;
-	else if(piece_sel == 1 && playerTurn == 1)
-		p1_o -= 1;
-	else if(piece_sel == 2 && playerTurn == 0)
-		p0_x -= 1;
-	else if(piece_sel == 2 && playerTurn == 1)
-		p1_x -= 1;
-}
+//void pieceInventory(int piece_sel){
+	//if(piece_sel == 1 && playerTurn == 0)
+		//p0_o -= 1;
+	//else if(piece_sel == 1 && playerTurn == 1)
+		//p1_o -= 1;
+	//else if(piece_sel == 2 && playerTurn == 0)
+		//p0_x -= 1;
+	//else if(piece_sel == 2 && playerTurn == 1)
+		//p1_x -= 1;
+//}
 
 int askTurnChoices(){
+	int p0_o;
+	int p1_o;
+	int p0_x;
+	int p1_x;
 	int piece_sel; // Piece selected
 	bool nok; // Not ok, error handler
 	do { 
@@ -179,7 +179,7 @@ int askTurnChoices(){
 		if(nok)
 			printf("The selected column is full.\n\n");
 	} while (nok);
-	pieceInventory(piece_sel);
+	//pieceInventory(piece_sel);
 	nextTurn(); // Advance 1 turn
 	//viewBoard(); // Render Board
 	return col_sel;
@@ -272,6 +272,53 @@ int getLastX(int col){
 
 int getLastY(int row){
 	return min(MAX_ROW - MAX_WIN_PIECE, row);
+}
+
+int diagonal_validation(int row, int col){
+	int x_first = getFirstX(col);
+	int y_first = getFirstY(row);
+	
+		
+	int delta_first_x = col - x_first;
+	int delta_first_y = row - y_first;
+	
+	//printf("x_last=%d, x_first=%d, y_last=%d, y_first=%d, \n", x_last, x_first, y_last, y_first);
+	//printf("delta_first_x=%d, delta_first_y=%d, delta_last_x=%d, delta_last_y=%d \n", delta_first_x, delta_first_y, delta_last_x, delta_last_y);
+	int inits_first = min(delta_first_x, delta_first_y); // Numero incrementos
+	//printf("row=%d, col=%d, x_first=%d, y_first=%d, inits_first=%d, inits_last=%d", row, col, x_first, y_first, inits_first, inits_last);
+	x_first = col - inits_first;
+	y_first = row - inits_first;
+	//printf("row=%d, col=%d, x_first=%d, y_first=%d, inits_first=%d, inits_last=%d \n", row, col, x_first, y_first, inits_first, inits_last);
+	
+	
+	for( int init = 0; init <= inits_first; init++ ){
+		int equal_color = 1; // já temos a primeira cor igual
+		int equal_symbol = 1;
+		int x = x_first + init;
+		int y = y_first + init;
+		// Condição para cantos board
+		if ((y + MAX_WIN_PIECE > MAX_ROW)|| 
+			(x + MAX_WIN_PIECE > MAX_COL))
+			return 0;
+		//printf("%d %d %d \n", x_init, x, x_last);
+		int turn = getTurn(y, x);
+		int symbol = getSymbol(y, x);
+		//printf("%d|%d  turn = %d, symbol = %d, x = %d, y = %d\n", init, inits_first, turn, symbol, x, y);
+		if(turn > 0)
+			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
+				
+				if( turn == getTurn(y + i, x + i) )
+					equal_color++;
+				if( symbol == getSymbol(y + i, x + i) )
+					equal_symbol++;
+				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
+			}
+		if(equal_symbol == MAX_WIN_PIECE)
+			return 2; // symbol win
+		if(equal_color == MAX_WIN_PIECE)
+			return 1; // color win
+	}
+	return 0; // nobody won, continue
 }
 
 int horizontal_validation(int row, int col){
@@ -377,15 +424,17 @@ int main() {
 	insertPiece(3, 1, 0);
 	insertPiece(3, 0, 1);
 	
-	printf("%d Horizontal win \n", horizontal_validation(0, 1));	
-	printf("%d Vertical win  \n", vertical_validation(0, 3));		
+	printf("%d Horizontal win: \n", horizontal_validation(0, 1));	
+	printf("%d Vertical win:  \n", vertical_validation(0, 3));
+	printf("%d Diag win:  \n", diagonal_validation(0, 0));
 
 	//do{
 		
 		//viewBoard();
 		//viewBoard_g2(dev, x, y);
 		//askTurnChoices();
-	//} while (!checkWhoWins(row_sel, col_sel));
+	//} while (!checkWhoWins(row_sel, col_sel))
+	// Adicionar função bool checkWhoWins p/ loop
 	viewBoard(); // Remover ao organizar interaccao
 	viewBoard_g2(dev, x, y);
 
