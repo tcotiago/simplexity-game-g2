@@ -17,16 +17,28 @@
 #define SPACING 10
 /** Game pieces in a sequence needed to win. */
 #define MAX_WIN_PIECE 4
+/** Inventory */
+#define MAX_PIECE_CYLINDERS 10
+#define MAX_PIECE_SQUARE 11
 
 
 char board[MAX_ROW][MAX_COL]; // Char Array 2D Board
+int inventory[2][2]; // Array for possible piece types
 int row_sel, col_sel; // Column and row selected
+
+
 
 void clearBoard(){
 	for(int r = 0; r < MAX_ROW ; r++) // Go through all rows
 		for(int c = 0; c < MAX_COL ; c++) // Go through all cols
 			board[r][c] = 0; // Reset all rows and cols
 	//playerTurn = 1;
+	for(int p = 0; p < 2 ; p++){ // Go through all players
+		inventory[p][0] = MAX_PIECE_CYLINDERS;
+		inventory[p][1] = MAX_PIECE_SQUARE;
+	}
+		
+			
 }
 
 char* getPrintableSymbol(char c){
@@ -34,11 +46,6 @@ char* getPrintableSymbol(char c){
 	if(c == 5) return "\x1B[31m0\x1B[0m"; // Red Cylinder
 	if(c == 6) return "\x1B[97mX\x1B[0m"; // White Square
 	if(c == 7) return "\x1B[31mX\x1B[0m"; // Red Square
-	
-	//if(c == 4) return "\x1B[97m"+PIECES[0]+"\x1B[0m"; // White O
-	//if(c == 5) return "\x1B[31m"+PIECES[0]+"\x1B[0m"; // Red O
-	//if(c == 6) return "\x1B[97m"+PIECES[1]+"\x1B[0m"; // White X
-	//if(c == 7) return "\x1B[31m"+PIECES[1]+"\x1B[0m"; // Red X
 	
 	else return "\x1B[90m|\x1B[0m"; // Else |
 }
@@ -118,45 +125,26 @@ int nextTurn(){ // Advances turn and changes player (P1 and P2)
 	return turnCounter += 1; // Advances Turn Counter on player change
 }
 
-//void pieceInventory(int piece_sel){
-	//if(piece_sel == 1 && playerTurn == 0)
-		//p0_o -= 1;
-	//else if(piece_sel == 1 && playerTurn == 1)
-		//p1_o -= 1;
-	//else if(piece_sel == 2 && playerTurn == 0)
-		//p0_x -= 1;
-	//else if(piece_sel == 2 && playerTurn == 1)
-		//p1_x -= 1;
-//}
+void showInventory(int player){
+	char* color[2] = {"White", "Red"};
+	
+	printf("Player %d's turn \n", (player + 1));
+	printf("%s cylinders left: %d \n", color[player], inventory[player][0]);
+	printf("%s cubes left: %d \n", color[player], inventory[player][1]);
+
+}
 
 int askTurnChoices(){
-	int p0_o;
-	int p1_o;
-	int p0_x;
-	int p1_x;
+
 	int piece_sel; // Piece selected
 	bool nok; // Not ok, error handler
+	
 	do { 
-		if(turnCounter == 1){ // Give pieces to both players
-		 p0_o = 10;
-		 p1_o = 10;
-		 p0_x = 11;
-		 p1_x = 11;
-		}
 		if(turnCounter == 43){ // Max turns before tie
+			clearBoard();
 			//gameOverTie();
 		}
-		if(playerTurn == 0){ // 0 or 1
-			printf("Player 1's turn \n");
-			printf("White cylinders left: %d \n", p0_o);
-			printf("White cubes left: %d \n", p0_x);
-			
-		}
-		else {
-			printf("Player 2's turn \n");
-			printf("Red cylinders left: %d \n", p1_o);
-			printf("Red cubes left: %d \n", p1_x);
-		}
+		showInventory(playerTurn);
 		do {
 			printf("Turn number: %d \n", turnCounter);
 			printf("Choose a valid column: \t");
@@ -169,7 +157,7 @@ int askTurnChoices(){
 		do {
 			printf("Choose a valid piece type (1 for %c or 2 for %c): ", PIECES[0], PIECES[1]);
 			scanf("%d", &piece_sel);
-			nok = (piece_sel < 1) || (piece_sel > 2); // Catch bad input
+			nok = (piece_sel < 1) || (piece_sel > 2) || (inventory[playerTurn][piece_sel - 1] <= 0); // Catch bad input
 			if(nok)
 				printf("You selected an invalid piece type.\n\n");
 				
@@ -179,9 +167,9 @@ int askTurnChoices(){
 		if(nok)
 			printf("The selected column is full.\n\n");
 	} while (nok);
-	//pieceInventory(piece_sel);
+	
+	inventory[playerTurn][piece_sel - 1]--;
 	nextTurn(); // Advance 1 turn
-	//viewBoard(); // Render Board
 	return col_sel;
 }
 	///////////////// HMI End
@@ -274,7 +262,63 @@ int getLastY(int row){
 	return min(MAX_ROW - MAX_WIN_PIECE, row);
 }
 
-int diagonal_validation(int row, int col){
+int horizontal_validation(int row, int col){
+	//printf("Horizontal %d\n", row);
+	int x_init = getFirstX(col);
+	int x_last = getLastX(col);
+
+	for( int x = x_init; x <= x_last; x++ ){
+		int equal_color = 1; // já temos a primeira cor igual
+		int equal_symbol = 1;
+		//printf("%d %d %d \n", x_init, x, x_last);
+		int turn = getTurn(row, x);
+		int symbol = getSymbol(row, x);
+		if(turn > 0)
+			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
+				
+				if( turn == getTurn(row, x + i) )
+					equal_color++;
+				if( symbol == getSymbol(row, x + i) )
+					equal_symbol++;
+				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
+			}
+		if(equal_symbol == MAX_WIN_PIECE)
+			return 2; // symbol win
+		if(equal_color == MAX_WIN_PIECE)
+			return 1; // color win
+	}
+	return 0; // nobody won, continue
+}
+
+int vertical_validation(int row, int col){
+	//printf("Vertical %d\n", col);
+	int y_init = getFirstY(row);
+	int y_last = getLastY(row);
+	for( int y = y_init; y <= y_last; y++ ){
+		int equal_color = 1; // já temos a primeira cor
+		int equal_symbol = 1; // já temos o primeiro simbolo
+		//printf("%d %d %d \n", x_init, x, x_last); // DEBUG
+		int turn = getTurn(y, col);
+		int symbol = getSymbol(y, col);
+		if(turn > 0)
+			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
+				
+				if( turn == getTurn(y + i, col) )
+					equal_color++;
+				if( symbol == getSymbol(y + i, col) )
+					equal_symbol++;
+				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
+			}
+		if(equal_symbol == MAX_WIN_PIECE)
+			return 2; // symbol win
+		if(equal_color == MAX_WIN_PIECE)
+			return 1; // color win
+	}
+	return 0; // nobody won, continue
+}
+
+
+int diagonal_validation_bottom_up(int row, int col){
 	int x_first = getFirstX(col);
 	int y_first = getFirstY(row);
 	
@@ -321,23 +365,38 @@ int diagonal_validation(int row, int col){
 	return 0; // nobody won, continue
 }
 
-int horizontal_validation(int row, int col){
-	printf("Horizontal %d\n", row);
-	int x_init = getFirstX(col);
+int diagonal_validation_top_down(int row, int col){
+	int x_first = getFirstX(col);
 	int x_last = getLastX(col);
+	int y_first = getFirstY(row);
+	int y_last = getLastY(row);
+	int delta_first_x = col - x_first;
+	int delta_first_y = row - y_first;
 
-	for( int x = x_init; x <= x_last; x++ ){
+	int delta_last_x = x_last - x_first;
+	int delta_last_y = y_last - y_first;
+	//printf("y_last=%d, y_first=%d\n", y_last, y_first);
+	int inits_first = max(delta_first_x, delta_last_y); // Numero incrementos
+	int inits_last = max(delta_last_x, delta_first_y); // Bug
+	
+	x_first = col - inits_first;
+	y_first = row + inits_first;
+	//printf("row=%d, col=%d, x_first=%d, y_first=%d, inits_first=%d, inits_last=%d, delta_last_x=%d, delta_last_y=%d\n", row, col, x_first, y_first, inits_first, inits_last, delta_last_x, delta_last_y);
+	for( int init = 0; init <= inits_last; init++ ){
 		int equal_color = 1; // já temos a primeira cor igual
 		int equal_symbol = 1;
+		int x = x_first + init;
+		int y = y_first - init;
 		//printf("%d %d %d \n", x_init, x, x_last);
-		int turn = getTurn(row, x);
-		int symbol = getSymbol(row, x);
+		int turn = getTurn(y, x);
+		int symbol = getSymbol(y, x);
+		//printf("   %d|%d  turn = %d, symbol = %d, x = %d, y = %d\n", init, inits_last, turn, symbol, x, y);
 		if(turn > 0)
 			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
 				
-				if( turn == getTurn(row, x + i) )
+				if( turn == getTurn(y - i, x + i) )
 					equal_color++;
-				if( symbol == getSymbol(row, x + i) )
+				if( symbol == getSymbol(y - i, x + i) )
 					equal_symbol++;
 				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
 			}
@@ -349,32 +408,49 @@ int horizontal_validation(int row, int col){
 	return 0; // nobody won, continue
 }
 
-int vertical_validation(int row, int col){
-	printf("Vertical %d\n", col);
-	int y_init = getFirstY(row);
-	int y_last = getLastY(row);
-	for( int y = y_init; y <= y_last; y++ ){
-		int equal_color = 1; // já temos a primeira cor
-		int equal_symbol = 1; // já temos o primeiro simbolo
-		//printf("%d %d %d \n", x_init, x, x_last); // DEBUG
-		int turn = getTurn(y, col);
-		int symbol = getSymbol(y, col);
-		if(turn > 0)
-			for( int i = 1 ; i < MAX_WIN_PIECE; i++ ){
-				
-				if( turn == getTurn(y + i, col) )
-					equal_color++;
-				if( symbol == getSymbol(y + i, col) )
-					equal_symbol++;
-				//printf("%d %d %d - %d %d \n", x + i, getTurn(row, x + i), getSymbol(row, x + i), equal_color, equal_symbol);
-			}
-		if(equal_symbol == MAX_WIN_PIECE)
-			return 2; // symbol win
-		if(equal_color == MAX_WIN_PIECE)
-			return 1; // color win
+int runAllValidations(int row, int col){
+	int result = 0;
+	
+	result = horizontal_validation(row, col);
+	if(result > 0){
+		printf("Ganhou Horizontal %d\n", result);
+		return result;
 	}
-	return 0; // nobody won, continue
+	result = vertical_validation(row, col);
+	if(result > 0){
+		printf("Ganhou Vertical %d\n", result);
+		return result;
+	}
+		
+	result = diagonal_validation_bottom_up(row, col);
+	if(result > 0){
+		printf("Ganhou Diag bot up %d\n", result);
+		return result;
+	}
+		
+	return diagonal_validation_top_down(row, col);
+	if(result > 0){
+		printf("Ganhou Diag top down %d\n", result);
+		return result;
+	}
+	return 0;
 }
+
+bool checkWhoWins(int row, int col){
+	int result = runAllValidations(row, col);
+	if(result == 0) // Nobody won
+		return false; 
+		
+	int turn = getTurn(row, col);
+	int symbol = getSymbol(row, col);
+	if(result == 1) // Have a winner
+		printf("Player %d won!\n", turn);
+	else 
+		printf("Player %d won!\n", symbol);
+	return true;
+}
+
+
 
 
 ///////////////// (wincheck end)
@@ -403,39 +479,39 @@ int main() {
 	//insertPiece(4, 0, 0);
 	//insertPiece(4, 1, 1);
 	
-	insertPiece(4, 1, 1);
-	insertPiece(4, 1, 1);
-	insertPiece(4, 1, 1);
-	insertPiece(2, 1, 1);
-	insertPiece(3, 0, 0);
-	insertPiece(3, 0, 0);
+	//insertPiece(4, 1, 1);
+	//insertPiece(4, 1, 1);
+	//insertPiece(4, 1, 1);
+	//insertPiece(2, 1, 1);
+	//insertPiece(3, 0, 0);
+	//insertPiece(3, 0, 0);
 	
 	//insertPiece(5, 0, 0);
 	//insertPiece(2, 0, 0);
 	//insertPiece(2, 0, 0);
 	
-	insertPiece(0, 0, 0);
-	insertPiece(1, 0, 1);
-	insertPiece(1, 1, 0);
-	insertPiece(2, 1, 0);
-	insertPiece(2, 1, 0);
-	insertPiece(2, 1, 0);
-	insertPiece(3, 1, 0);
-	insertPiece(3, 1, 0);
-	insertPiece(3, 0, 1);
+	//insertPiece(0, 0, 0);
+	//insertPiece(1, 0, 1);
+	//insertPiece(1, 1, 0);
+	//insertPiece(2, 1, 0);
+	//insertPiece(2, 1, 0);
+	//insertPiece(2, 1, 0);
+	//insertPiece(3, 1, 0);
+	//insertPiece(3, 1, 0);
+	//insertPiece(3, 0, 1);
 	
-	printf("%d Horizontal win: \n", horizontal_validation(0, 1));	
-	printf("%d Vertical win:  \n", vertical_validation(0, 3));
-	printf("%d Diag win:  \n", diagonal_validation(0, 0));
+	//printf("%d Horizontal win: \n", horizontal_validation(0, 1));	
+	//printf("%d Vertical win:  \n", vertical_validation(0, 3));
+	//printf("%d Diag win:  \n", diagonal_validation_bottom_up(0, 0));
 
-	//do{
+	do{
 		
-		//viewBoard();
-		//viewBoard_g2(dev, x, y);
-		//askTurnChoices();
-	//} while (!checkWhoWins(row_sel, col_sel))
-	// Adicionar função bool checkWhoWins p/ loop
-	viewBoard(); // Remover ao organizar interaccao
+		viewBoard();
+		viewBoard_g2(dev, x, y);
+		askTurnChoices();
+	} while (!checkWhoWins(row_sel, col_sel));
+	
+	viewBoard(); // Last render after winning game Ascii & G2
 	viewBoard_g2(dev, x, y);
 
 	getchar();
