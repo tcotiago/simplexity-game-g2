@@ -190,7 +190,7 @@ int runAllValidations(int row, int col){
 		return result;
 	}
 		
-	return diagonal_validation_top_down(row, col);
+	result = diagonal_validation_top_down(row, col);
 	if(result > 0){
 		//printf("Ganhou Diagonal cima para baixo %d\n", result);
 		return result;
@@ -201,16 +201,14 @@ int runAllValidations(int row, int col){
 // Functions returns boolean to break gameLoop
 bool checkWhoWins(int row, int col){
 	int result = runAllValidations(row, col);
-	if(result == 0){
+	if(result == 0)
 		return false; // Nobody won
-	}
 	int turn = getTurn(row, col);
 	int symbol = getSymbol(row, col);
-	if(result == 1){ // Turn/color win
+	if(result == 1) // Turn/color win
 		printf("Player %d won!\n", turn);
-	}
-	else{ // Symbol win
+	else // Symbol win
 		printf("Player %d won!\n", symbol);
-	}
+		
 	return true; // A player has won, break loop
 }
