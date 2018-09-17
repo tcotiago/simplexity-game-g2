@@ -11,7 +11,7 @@ O jogo foi desenvolvido em repositório local, disponível agora [neste link](ht
 
 ### Arquitectura da Solução
 
-O Tabuleiro de jogo é um Array 2D de caracteres, o tamanho deste Array é dependente dos valores definidos no header _Constants_, para coluna e linhas máximas. O jogo continua enquanto enquanto não for devolvido um booleano verdadeiro numa função 
+O Tabuleiro de jogo é um Array 2D de caracteres, o tamanho deste Array é dependente dos valores definidos no header _Constants_, para coluna e linhas máximas. O jogo continua em loop enquanto não for devolvido um booleano verdadeiro na função checkWhoWins.
 
 O jogo é renderizado de duas maneiras: 
 
