@@ -44,7 +44,7 @@ int nextTurn(){
 
 // Ends game if MAX_TURN is reached
 void gameoverTie(){
-	printf("No player won. Zero pieces remaining.");
+	printf("No player won. Zero pieces remaining. \n");
 }
 
 // Function to print turn and inventory on each turn
@@ -61,8 +61,9 @@ int askTurnChoices(){
 	int piece_sel; // Piece selected
 	bool nok; // Not ok, error handler
 	do { 
-		if(turnCounter == MAX_TURNS) // Max turns before tie
+		if(turnCounter == MAX_TURNS){ // Max turns before tie
 			gameoverTie();
+		}
 		showInventory(playerTurn);
 		do {
 			printf("Turn number: %d \n", turnCounter);
@@ -70,16 +71,16 @@ int askTurnChoices(){
 			scanf("%d", &col_sel);
 			nok = (col_sel < 1) || (col_sel > MAX_COL);
 			col_sel--;
-			if(nok == true)
+			if(nok)
 				printf("You selected an invalid column.\n\n");
-		} while (nok == true);
+		} while (nok);
 		do {
 			printf("Choose a valid piece type (1 for %c or 2 for %c): ", PIECES[0], PIECES[1]);
 			scanf("%d", &piece_sel);
-			nok = (piece_sel < 1) || (piece_sel > 2); // Catch bad input
+			nok = (piece_sel < 1) || (piece_sel > 2) || (inventory[playerTurn][piece_sel - 1] <= 0); // Catch bad input
 			if(nok)
 				printf("You selected an invalid piece type.\n\n");	
-		} while (nok == true);
+		} while (nok);
 		row_sel = insertPiece(col_sel, piece_sel -1, playerTurn);
 		nok = row_sel < 0; // Full col error catcher
 		if(nok)
